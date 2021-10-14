@@ -1,48 +1,65 @@
 //: A UIKit based Playground for presenting user interface
-  
+
 import UIKit
-import Foundation
 import PlaygroundSupport
 
-import AVKit
+import AVFoundation
 import CoreImage.CIFilterBuiltins
 
-
-        let view = UIView(frame: CGRect(x: 0, y: 0, width: 640, height: 834))
+//Create a view to display our work
+let view = UIView(frame: CGRect(x: 0, y: 0, width: 500, height: 900))
 view.backgroundColor = UIColor.black
 
 
+//Fetch a URL for the movie from the bundle
+let waterfallURL = Bundle.main.url(forResource: "waterfall", withExtension: "mov")
 
-      let waterfallURL = Bundle.main.url(forResource: "waterfall", withExtension: "mov")
-let waterFallItem = AVPlayerItem(url: waterfallURL!)
+//Create an AVAsset with the url
+let waterfallAsset = AVAsset(url: waterfallURL!)
 
-let titleComposition = AVMutableVideoComposition(asset: waterFallItem.asset) { request in
-//  let textFilter = CIFilter.textImageGenerator()
-//  textFilter.text = "Waterfall!"
-//  textFilter.fontSize = 72
-//  textFilter.fontName = "Marker Felt"
-//  textFilter.scaleFactor = 2.0
+//Create a composition with the AVAsset
+let titleComposition = AVMutableVideoComposition(asset: waterfallAsset) { request in
 
+//Create a white shadow for the text
+  let whiteShadow = NSShadow()
+  whiteShadow.shadowBlurRadius = 5
+  whiteShadow.shadowColor = UIColor.white
+
+  let attributes = [
+    NSAttributedString.Key.foregroundColor : UIColor.blue,
+    NSAttributedString.Key.font : UIFont(name: "Marker Felt", size: 36.0)!,
+    NSAttributedString.Key.shadow : whiteShadow
+  ]
+
+  //Create an Attributed String
+  let waterfallText = NSAttributedString(string: "Waterfall!", attributes: attributes)
+
+  //Convert attributed string to a CIImage
   let textFilter = CIFilter.attributedTextImageGenerator()
-    let waterfallText = NSAttributedString(string: "Waterfall!", attributes: [NSAttributedString.Key.foregroundColor : UIColor.blue, NSAttributedString.Key.font : UIFont(name: "Marker Felt", size: 72.0)!])
   textFilter.text = waterfallText
-  textFilter.scaleFactor = 2.0
+  textFilter.scaleFactor = 4.0
 
-  let whiteText = textFilter.outputImage!.transformed(by: CGAffineTransform(translationX: (request.sourceImage.extent.width - textFilter.outputImage!.extent.width)/2, y: 200))
+  //Center text and move 200 px from the origin
+  //source image is 720 x 1280
+  let positionedText = textFilter.outputImage!.transformed(by: CGAffineTransform(translationX: (request.renderSize.width - textFilter.outputImage!.extent.width)/2, y: 200))
 
-  request.finish(with: whiteText.composited(over: request.sourceImage), context: nil)
+  //Compose text over video image
+  request.finish(with: positionedText.composited(over: request.sourceImage), context: nil)
 }
 
+let waterFallItem = AVPlayerItem(asset: waterfallAsset)
+
 waterFallItem.videoComposition = titleComposition
-      let player = AVPlayer(playerItem: waterFallItem)
 
-      let playerLayer = AVPlayerLayer(player: player)
-      playerLayer.frame = view.layer.bounds
-      playerLayer.videoGravity = .resizeAspect
+let player = AVPlayer(playerItem: waterFallItem)
 
-      view.layer.addSublayer(playerLayer)
+let playerLayer = AVPlayerLayer(player: player)
+playerLayer.frame = view.layer.bounds
+playerLayer.videoGravity = .resizeAspect
 
-      player.play()
+view.layer.addSublayer(playerLayer)
+
+player.play()
 
 
 // Present the view controller in the Live View window
